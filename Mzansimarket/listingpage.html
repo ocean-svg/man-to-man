@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MzansiMarket — Browse Listings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/listingpage.css"/>
+
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div class="modal-inner">
+      <div class="modal-gallery">
+        <div class="modal-main-img" id="modalEmoji"></div>
+        <div class="modal-thumbs" id="modalThumbs"></div>
+      </div>
+      <div class="modal-info">
+        <div class="modal-category" id="modalCategory"></div>
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <div class="modal-price" id="modalPrice"></div>
+        <div class="modal-badges" id="modalBadges"></div>
+        <p class="modal-desc" id="modalDesc"></p>
+        <div class="modal-seller" id="modalSeller"></div>
+        <div class="modal-location" id="modalLocation"></div>
+        <div class="modal-actions">
+          <button class="modal-btn-buy" onclick="showToast('🔒 Escrow checkout coming soon!')">🔒 Buy Securely</button>
+          <button class="modal-btn-icon" title="Message Seller" onclick="showToast('💬 Opening chat...')">💬</button>
+          <button class="modal-btn-icon" id="modalSaveBtn" onclick="toggleModalSave()">🤍</button>
+        </div>
+        <div class="modal-escrow-note"><span>🔒</span> Escrow-protected — funds held until you confirm delivery.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="nav-logo-dot"></span>MzansiMarket</a>
+    <div class="nav-search">
+      <span class="nav-search-icon">🔍</span>
+      <input type="text" placeholder="Search listings — sneakers, phones, furniture…" id="searchInput" oninput="handleSearch()"/>
+      <button class="nav-search-btn" onclick="handleSearch()">Search</button>
+    </div>
+    <div class="nav-right">
+      <a href="index.html" class="nav-btn nav-btn-primary">+ Sell</a>
+      <a href="auth-modal.html" class="nav-btn nav-btn-ghost">Sign In</a>
+      <div class="nav-cart" onclick="showToast('🛒 Your cart is empty')">🛒<span class="cart-badge">0</span></div>
+      <button class="filter-bar-btn" onclick="openSidebar()">⚙️ Filters</button>
+    </div>
+  </div>
+</nav>
+
+<!-- CATEGORY STRIP -->
+<div class="cat-strip">
+  <div class="cat-inner">
+    <div class="cat-item active"  onclick="filterCategory(this,'All')"><span class="cat-icon">✨</span>All</div>
+    <div class="cat-item" onclick="filterCategory(this,'Clothing')"><span class="cat-icon">👕</span>Clothing</div>
+    <div class="cat-item" onclick="filterCategory(this,'Electronics')"><span class="cat-icon">📱</span>Electronics</div>
+    <div class="cat-item" onclick="filterCategory(this,'Handmade')"><span class="cat-icon">🪡</span>Handmade</div>
+    <div class="cat-item" onclick="filterCategory(this,'Home')"><span class="cat-icon">🏠</span>Home</div>
+    <div class="cat-item" onclick="filterCategory(this,'Food')"><span class="cat-icon">🍱</span>Food</div>
+    <div class="cat-item" onclick="filterCategory(this,'Shoes')"><span class="cat-icon">👟</span>Shoes</div>
+    <div class="cat-item" onclick="filterCategory(this,'Tools')"><span class="cat-icon">🔧</span>Tools</div>
+    <div class="cat-item" onclick="filterCategory(this,'Books')"><span class="cat-icon">📚</span>Books</div>
+    <div class="cat-item" onclick="filterCategory(this,'Kids')"><span class="cat-icon">🧸</span>Kids</div>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Filters</span>
+      <button class="sidebar-clear" onclick="clearAllFilters()">Clear all</button>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Seller Trust</span>
+      <div class="trust-toggle on" id="verifiedToggle" onclick="toggleVerified()">
+        <div class="trust-toggle-left">
+          <span class="trust-toggle-icon">✅</span>
+          <div><div class="trust-toggle-label">Verified Only</div><div class="trust-toggle-sub">FICA-verified sellers</div></div>
+        </div>
+        <div class="switch on" id="verifiedSwitch"></div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Price Range</span>
+      <div class="price-inputs">
+        <input type="number" class="price-input" id="priceMin" placeholder="R Min" min="0" oninput="applyFilters()"/>
+        <span class="price-sep">—</span>
+        <input type="number" class="price-input" id="priceMax" placeholder="R Max" min="0" oninput="applyFilters()"/>
+      </div>
+      <div class="range-wrap">
+        <input type="range" min="0" max="10000" value="10000" id="priceRange" oninput="updatePriceRange(this.value)"/>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Condition</span>
+      <div class="checkbox-list">
+        <label class="checkbox-item checked" onclick="toggleCheckbox(this)"><input type="checkbox" checked/><div class="checkbox-box">✓</div><span class="checkbox-text">New / Unused</span><span class="checkbox-count">48</span></label>
+        <label class="checkbox-item checked" onclick="toggleCheckbox(this)"><input type="checkbox" checked/><div class="checkbox-box">✓</div><span class="checkbox-text">Good Condition</span><span class="checkbox-count">134</span></label>
+        <label class="checkbox-item checked" onclick="toggleCheckbox(this)"><input type="checkbox" checked/><div class="checkbox-box">✓</div><span class="checkbox-text">Fair / Used</span><span class="checkbox-count">72</span></label>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Province</span>
+      <div class="province-grid">
+        <div class="province-item selected" onclick="filterProvince(this,'All')"><div class="province-dot"></div><span class="province-name">All Provinces</span><span class="province-count">254</span></div>
+        <div class="province-item" onclick="filterProvince(this,'Gauteng')"><div class="province-dot"></div><span class="province-name">Gauteng</span><span class="province-count">118</span></div>
+        <div class="province-item" onclick="filterProvince(this,'W. Cape')"><div class="province-dot"></div><span class="province-name">Western Cape</span><span class="province-count">67</span></div>
+        <div class="province-item" onclick="filterProvince(this,'KZN')"><div class="province-dot"></div><span class="province-name">KwaZulu-Natal</span><span class="province-count">41</span></div>
+        <div class="province-item" onclick="filterProvince(this,'E. Cape')"><div class="province-dot"></div><span class="province-name">Eastern Cape</span><span class="province-count">28</span></div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Delivery</span>
+      <div class="checkbox-list">
+        <label class="checkbox-item" onclick="toggleCheckbox(this)"><input type="checkbox"/><div class="checkbox-box"></div><span class="checkbox-text">Courier available</span></label>
+        <label class="checkbox-item" onclick="toggleCheckbox(this)"><input type="checkbox"/><div class="checkbox-box"></div><span class="checkbox-text">Pickup only</span></label>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Date Listed</span>
+      <div class="checkbox-list">
+        <label class="checkbox-item" onclick="toggleCheckbox(this)"><input type="checkbox"/><div class="checkbox-box"></div><span class="checkbox-text">Today</span><span class="checkbox-count">12</span></label>
+        <label class="checkbox-item" onclick="toggleCheckbox(this)"><input type="checkbox"/><div class="checkbox-box"></div><span class="checkbox-text">This week</span><span class="checkbox-count">54</span></label>
+        <label class="checkbox-item" onclick="toggleCheckbox(this)"><input type="checkbox"/><div class="checkbox-box"></div><span class="checkbox-text">This month</span><span class="checkbox-count">189</span></label>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="results-bar">
+      <div class="results-count" id="resultsCount">Showing <strong>—</strong> listings <span>across South Africa</span></div>
+      <div class="results-right">
+        <div class="sort-wrap">
+          <select class="sort-select" onchange="applySort(this.value)">
+            <option value="recent">Most Recent</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="trusted">Verified First</option>
+          </select>
+        </div>
+        <div class="view-toggle">
+          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid">⊞</button>
+          <button class="view-btn" id="listBtn" onclick="setView('list')" title="List">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="active-filters" id="activeFilters">
+      <div class="filter-chip">✅ Verified Only <button class="chip-remove" onclick="removeFilter('verified')">✕</button></div>
+    </div>
+
+    <div class="listings-grid" id="listingsGrid">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No listings found</div>
+        <div class="empty-sub">Try adjusting your search or filters.</div>
+      </div>
+    </div>
+
+    <div class="load-more-wrap">
+      <button class="load-more-btn" onclick="loadMore()">Load more listings <span>↓</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+let state={search:'',category:'All',province:'All',verifiedOnly:true,priceMax:10000,sort:'recent',view:'grid',savedIds:new Set(),page:1,perPage:12};
+let currentModalItem=null;
+
+function getFiltered(){
+  return LISTINGS.filter(l=>{
+    if(state.verifiedOnly&&!l.verified)return false;
+    if(state.category!=='All'&&l.category!==state.category)return false;
+    if(state.province!=='All'&&!l.location.includes(state.province))return false;
+    if(l.price>state.priceMax)return false;
+    const q=state.search.toLowerCase();
+    if(q&&!l.title.toLowerCase().includes(q)&&!l.category.toLowerCase().includes(q)&&!l.location.toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>{
+    if(state.sort==='price-asc')return a.price-b.price;
+    if(state.sort==='price-desc')return b.price-a.price;
+    if(state.sort==='trusted')return(b.verified?1:0)-(a.verified?1:0);
+    return 0;
+  });
+}
+
+function renderListings(){
+  const grid=document.getElementById('listingsGrid');
+  const empty=document.getElementById('emptyState');
+  const filtered=getFiltered();
+  const slice=filtered.slice(0,state.page*state.perPage);
+  grid.querySelectorAll('.listing-card').forEach(el=>el.remove());
+  empty.classList.remove('show');
+  if(!filtered.length){empty.classList.add('show');}
+  slice.forEach(l=>grid.appendChild(buildCard(l)));
+  const showing=Math.min(slice.length,filtered.length);
+  document.getElementById('resultsCount').innerHTML=
+    `Showing <strong>${showing}</strong> of <strong>${filtered.length}</strong> listings <span>${state.category!=='All'?'in '+state.category:'across South Africa'}</span>`;
+}
+
+function buildCard(l){
+  const saved=state.savedIds.has(l.id);
+  const d=document.createElement('div');
+  d.className='listing-card';
+  d.innerHTML=`
+    <div class="card-img">
+      <span class="card-img-emoji">${l.emoji}</span>
+      <span class="condition-badge cond-${l.condition.toLowerCase()}">${l.condition}</span>
+      <button class="card-save${saved?' saved':''}" onclick="event.stopPropagation();toggleSave(${l.id},this)"><span>${saved?'❤️':'🤍'}</span></button>
+      ${l.verified?`<div class="verified-ribbon"><span class="verified-dot"></span>Verified</div>`:''}
+    </div>
+    <div class="card-body">
+      <div class="card-category">${l.category}</div>
+      <div class="card-title">${l.title}</div>
+      <div class="card-location">📍 ${l.location}</div>
+      <div class="card-footer">
+        <div>
+          <div class="card-price">R ${l.price.toLocaleString()}</div>
+          <div class="card-price-sub">${l.delivery==='courier'?'🚚 Courier':l.delivery==='pickup'?'📍 Pickup only':'🚚 Courier & pickup'}</div>
+        </div>
+        <div class="card-seller">
+          <div class="seller-avatar" style="background:${l.sellerColor}">${l.seller.charAt(0)}</div>
+          <div>
+            <div class="seller-name">${l.seller}</div>
+            <div class="seller-stars">${'★'.repeat(Math.floor(l.rating))}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="card-buy-btn" onclick="event.stopPropagation();showToast('🔒 Escrow checkout coming soon!')">🔒 Buy Securely</button>`;
+  d.addEventListener('click',()=>openModal(l));
+  return d;
+}
+
+function openModal(l){
+  currentModalItem=l;
+  document.getElementById('modalEmoji').textContent=l.emoji;
+  document.getElementById('modalCategory').textContent=l.category;
+  document.getElementById('modalTitle').textContent=l.title;
+  document.getElementById('modalPrice').innerHTML=`<sup>R</sup>${l.price.toLocaleString()}`;
+  document.getElementById('modalDesc').textContent=l.desc;
+  document.getElementById('modalBadges').innerHTML=
+    `${l.verified?`<span class="modal-badge badge-verified">✓ Verified</span>`:''}
+     <span class="modal-badge badge-escrow">🔒 Escrow</span>
+     <span class="modal-badge badge-cond">${l.condition}</span>`;
+  document.getElementById('modalThumbs').innerHTML=
+    [l.emoji,'📷','📐'].map((e,i)=>`<div class="modal-thumb${i===0?' active':''}">${e}</div>`).join('');
+  document.getElementById('modalSeller').innerHTML=`
+    <div class="modal-seller-av" style="background:${l.sellerColor}">${l.seller.charAt(0)}</div>
+    <div>
+      <div class="modal-seller-name">${l.seller}${l.verified?' ✓':''}</div>
+      <div class="modal-seller-meta"><span class="modal-seller-stars">${'★'.repeat(Math.floor(l.rating))}</span> ${l.rating} · Listed ${l.posted}</div>
+    </div>`;
+  document.getElementById('modalLocation').innerHTML=`📍 <strong>${l.location}</strong> &nbsp;·&nbsp; ${l.delivery==='courier'?'🚚 Courier':l.delivery==='pickup'?'📍 Pickup':'🚚 Courier & pickup'}`;
+  document.getElementById('modalSaveBtn').textContent=state.savedIds.has(l.id)?'❤️':'🤍';
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(e){if(e.target===document.getElementById('modalOverlay'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modalOverlay').classList.remove('open');document.body.style.overflow='';}
+function toggleModalSave(){if(!currentModalItem)return;toggleSave(currentModalItem.id,null);document.getElementById('modalSaveBtn').textContent=state.savedIds.has(currentModalItem.id)?'❤️':'🤍';}
+
+function handleSearch(){state.search=document.getElementById('searchInput').value;state.page=1;updateChips();renderListings();}
+function filterCategory(el,cat){document.querySelectorAll('.cat-item').forEach(c=>c.classList.remove('active'));el.classList.add('active');state.category=cat;state.page=1;updateChips();renderListings();}
+function filterProvince(el,prov){document.querySelectorAll('.province-item').forEach(p=>p.classList.remove('selected'));el.classList.add('selected');state.province=prov;state.page=1;updateChips();renderListings();}
+function toggleVerified(){state.verifiedOnly=!state.verifiedOnly;document.getElementById('verifiedToggle').classList.toggle('on',state.verifiedOnly);document.getElementById('verifiedSwitch').classList.toggle('on',state.verifiedOnly);updateChips();renderListings();}
+function updatePriceRange(val){state.priceMax=parseInt(val);document.getElementById('priceMax').value=val;state.page=1;renderListings();}
+function applyFilters(){state.priceMax=parseInt(document.getElementById('priceMax').value)||10000;state.page=1;renderListings();}
+function applySort(val){state.sort=val;renderListings();}
+function toggleCheckbox(el){el.classList.toggle('checked');el.querySelector('.checkbox-box').textContent=el.classList.contains('checked')?'✓':'';}
+function clearAllFilters(){
+  state={...state,search:'',category:'All',province:'All',verifiedOnly:false,priceMax:10000,page:1};
+  document.getElementById('searchInput').value='';
+  document.getElementById('priceMax').value='';
+  document.getElementById('priceMin').value='';
+  document.getElementById('priceRange').value=10000;
+  document.querySelectorAll('.cat-item').forEach((c,i)=>c.classList.toggle('active',i===0));
+  document.querySelectorAll('.province-item').forEach((p,i)=>p.classList.toggle('selected',i===0));
+  document.getElementById('verifiedToggle').classList.remove('on');
+  document.getElementById('verifiedSwitch').classList.remove('on');
+  document.querySelectorAll('.checkbox-item').forEach(c=>{c.classList.remove('checked');c.querySelector('.checkbox-box').textContent='';});
+  updateChips();renderListings();
+}
+function removeFilter(type){if(type==='verified'){state.verifiedOnly=false;document.getElementById('verifiedToggle').classList.remove('on');document.getElementById('verifiedSwitch').classList.remove('on');}updateChips();renderListings();}
+function removeFilterCat(){state.category='All';document.querySelectorAll('.cat-item').forEach((c,i)=>c.classList.toggle('active',i===0));updateChips();renderListings();}
+function removeFilterProv(){state.province='All';document.querySelectorAll('.province-item').forEach((p,i)=>p.classList.toggle('selected',i===0));updateChips();renderListings();}
+function removeFilterSearch(){state.search='';document.getElementById('searchInput').value='';updateChips();renderListings();}
+
+function updateChips(){
+  let h='';
+  if(state.verifiedOnly)h+=`<div class="filter-chip">✅ Verified Only <button class="chip-remove" onclick="removeFilter('verified')">✕</button></div>`;
+  if(state.category!=='All')h+=`<div class="filter-chip">${state.category} <button class="chip-remove" onclick="removeFilterCat()">✕</button></div>`;
+  if(state.province!=='All')h+=`<div class="filter-chip">📍 ${state.province} <button class="chip-remove" onclick="removeFilterProv()">✕</button></div>`;
+  if(state.search)h+=`<div class="filter-chip">🔍 "${state.search}" <button class="chip-remove" onclick="removeFilterSearch()">✕</button></div>`;
+  document.getElementById('activeFilters').innerHTML=h;
+}
+
+function setView(v){state.view=v;document.getElementById('listingsGrid').classList.toggle('list-view',v==='list');document.getElementById('gridBtn').classList.toggle('active',v==='grid');document.getElementById('listBtn').classList.toggle('active',v==='list');}
+function toggleSave(id,btn){const added=!state.savedIds.has(id);if(added)state.savedIds.add(id);else state.savedIds.delete(id);if(btn){btn.classList.toggle('saved',added);btn.querySelector('span').textContent=added?'❤️':'🤍';}showToast(added?'❤️ Saved to wishlist':'🗑️ Removed from wishlist');}
+function loadMore(){state.page++;renderListings();}
+
+let toastTimer;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
+
+function openSidebar(){document.getElementById('sidebar').classList.add('mobile-open');document.getElementById('sidebarOverlay').classList.add('show');document.body.style.overflow='hidden';}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('sidebarOverlay').classList.remove('show');document.body.style.overflow='';}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();if(e.key==='Enter'&&document.activeElement.id==='searchInput')handleSearch();});
+;
+</script>
+<script src="app.js"></script>
+<script src="listings-connect.js"></script>
+</body>
+</html>
